@@ -809,35 +809,62 @@ Notes: """${notes}"""`;
     return JSON.parse(txt);
   }
 
-  // ── POLLINATIONS — parallel with retry ──
+  // ── POLLINATIONS — sequential with retry (more reliable) ──
   async function genImages(scenes, style) {
     scenes.forEach((_, i) => fillThumb(i, null, true));
-    setDetail('Generating images in parallel…');
+    const blobs = [];
 
-    async function fetchImage(scene, i, attempt) {
-      const p = encodeURIComponent(`${scene.imagePrompt}, ${style}, high quality, educational, no text`);
-      const seed = Math.floor(Math.random() * 999999);
-      const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true`;
+    for (let i = 0; i < scenes.length; i++) {
+      setDetail(`Generating image ${i+1} of ${scenes.length}…`);
+      const blob = await fetchImageWithRetry(scenes[i], i, style, scenes.length);
+      blobs.push(blob);
+      fillThumb(i, blob, false);
+    }
+    return blobs;
+  }
+
+  async function fetchImageWithRetry(scene, i, style, total) {
+    for (let attempt = 1; attempt <= 4; attempt++) {
       try {
-        const r = await fetch(url);
-        if (!r.ok) throw new Error('bad response');
+        const p = encodeURIComponent(`${scene.imagePrompt}, ${style}, high quality, educational, no text`);
+        const seed = Math.floor(Math.random() * 999999);
+        const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true&model=flux`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        const r = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const blob = await r.blob();
-        setDetail(`Image ${i+1} of ${scenes.length} ready!`);
+        if (blob.size < 1000) throw new Error('Image too small');
+        setDetail(`Image ${i+1} of ${total} done ✓`);
         return blob;
       } catch(e) {
-        if (attempt < 3) {
-          setDetail(`Image ${i+1} retrying (attempt ${attempt+1})…`);
-          await new Promise(r => setTimeout(r, 2000 * attempt));
-          return fetchImage(scene, i, attempt + 1);
+        if (attempt < 4) {
+          setDetail(`Image ${i+1} failed, retrying (${attempt}/3)…`);
+          await new Promise(r => setTimeout(r, 3000));
+        } else {
+          setDetail(`Image ${i+1} using fallback…`);
+          return makeFallbackImage(scene.title || `Scene ${i+1}`);
         }
-        // After 3 fails return a blank placeholder blob
-        setDetail(`Image ${i+1} skipped after 3 tries`);
-        return await fetch('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==').then(r=>r.blob());
       }
     }
+  }
 
-    const promises = scenes.map((scene, i) => fetchImage(scene, i, 1));
-    return await Promise.all(promises);
+  function makeFallbackImage(title) {
+    // Create a proper dark canvas image as fallback
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024; canvas.height = 576;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, 1024, 576);
+    ctx.fillStyle = '#e8b84b';
+    ctx.fillRect(0, 260, 1024, 56);
+    ctx.fillStyle = '#0a0a0f';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title, 512, 288);
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
   }
 
     // ── TTS — Safari-safe: use silent audio, narration plays live ──
