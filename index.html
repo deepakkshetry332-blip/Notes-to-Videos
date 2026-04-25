@@ -8,8 +8,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="NoteFilm" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>NoteFilm — Notes to Video</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet" />
@@ -38,7 +36,6 @@ html, body {
   overflow-x: hidden;
 }
 
-/* ── GRAIN OVERLAY ── */
 body::before {
   content: '';
   position: fixed;
@@ -49,7 +46,6 @@ body::before {
   opacity: 0.4;
 }
 
-/* ── FILM STRIP HEADER ── */
 header {
   padding: 2rem 1.5rem 1rem;
   border-bottom: 1px solid #ffffff12;
@@ -74,7 +70,6 @@ header {
   letter-spacing: 0.04em;
   line-height: 0.9;
   color: var(--reel);
-  position: relative;
 }
 .logo em {
   font-family: var(--serif);
@@ -93,7 +88,6 @@ header {
   margin-top: 0.5rem;
 }
 
-/* ── API KEY SETUP ── */
 #setup-screen {
   padding: 2rem 1.5rem;
   animation: fadeUp 0.5s ease both;
@@ -107,9 +101,7 @@ header {
   margin-bottom: 0.75rem;
 }
 
-.key-input-wrap {
-  position: relative;
-}
+.key-input-wrap { position: relative; }
 
 input[type="password"], input[type="text"], textarea {
   width: 100%;
@@ -124,9 +116,7 @@ input[type="password"], input[type="text"], textarea {
   transition: border-color 0.2s;
   -webkit-appearance: none;
 }
-input:focus, textarea:focus {
-  border-color: var(--reel);
-}
+input:focus, textarea:focus { border-color: var(--reel); }
 
 .toggle-key {
   position: absolute;
@@ -141,7 +131,6 @@ input:focus, textarea:focus {
   padding: 0;
 }
 
-/* ── MAIN APP ── */
 #app-screen {
   display: none;
   padding: 1.5rem;
@@ -168,7 +157,6 @@ textarea {
   color: #ffffff30;
 }
 
-/* ── SETTINGS ROW ── */
 .settings-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -202,7 +190,6 @@ select {
   background-position: right 0.8rem center;
 }
 
-/* ── GENERATE BUTTON ── */
 .btn-generate {
   width: 100%;
   padding: 1.1rem;
@@ -220,11 +207,7 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 .btn-generate:active { transform: scale(0.98); }
-.btn-generate:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none;
-}
+.btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .btn-generate::after {
   content: '';
   position: absolute;
@@ -232,7 +215,6 @@ select {
   background: linear-gradient(135deg, transparent 40%, #ffffff25 100%);
 }
 
-/* ── PROGRESS ── */
 #progress-screen {
   display: none;
   padding: 2rem 1.5rem;
@@ -304,7 +286,6 @@ select {
   flex-shrink: 0;
 }
 
-/* ── SCENE PREVIEWS ── */
 .scenes-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -336,7 +317,6 @@ select {
   color: #ffffff60;
   font-family: var(--mono);
 }
-
 .scene-thumb .img-placeholder {
   position: absolute;
   inset: 0;
@@ -347,7 +327,6 @@ select {
   opacity: 0.2;
 }
 
-/* ── DOWNLOAD SCREEN ── */
 #done-screen {
   display: none;
   padding: 2rem 1.5rem;
@@ -363,12 +342,7 @@ select {
   margin-bottom: 1.5rem;
 }
 
-.done-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 1rem;
-}
-
+.done-icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
 .done-title {
   font-family: var(--display);
   font-size: 2.5rem;
@@ -376,7 +350,6 @@ select {
   color: var(--reel);
   margin-bottom: 0.3rem;
 }
-
 .done-meta {
   font-size: 0.65rem;
   color: #ffffff40;
@@ -414,7 +387,6 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ── ERROR TOAST ── */
 #toast {
   position: fixed;
   bottom: 2rem;
@@ -426,14 +398,13 @@ select {
   border-radius: 6px;
   font-size: 0.75rem;
   font-family: var(--mono);
-  z-index: 999;
+  z-index: 9999;
   transform: translateY(120%);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   line-height: 1.5;
 }
 #toast.show { transform: translateY(0); }
 
-/* ── DECORATIVE FILM STRIP SIDE ── */
 .film-side {
   position: fixed;
   right: 0;
@@ -450,9 +421,7 @@ select {
   pointer-events: none;
 }
 
-/* ── UTILITIES ── */
 .mt-1 { margin-top: 1rem; }
-.gap { height: 1rem; }
 
 .btn-secondary {
   background: none;
@@ -468,16 +437,7 @@ select {
   margin-top: 0.75rem;
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ── FFMPEG NOTE ── */
-.ffmpeg-note {
+.info-note {
   background: #e8b84b12;
   border: 1px solid #e8b84b30;
   border-radius: 6px;
@@ -487,7 +447,28 @@ select {
   color: #e8b84b90;
   margin-bottom: 1.5rem;
 }
-.ffmpeg-note strong { color: var(--reel); }
+.info-note strong { color: var(--reel); }
+
+/* Audio permission banner */
+#audio-banner {
+  display: none;
+  background: #38bdf820;
+  border: 1px solid #38bdf840;
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+  font-size: 0.65rem;
+  color: #38bdf8;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 ```
 
   </style>
@@ -519,17 +500,18 @@ select {
     Get a free key at <strong style="color:#e8b84b">console.groq.com</strong> → API Keys.
   </p>
 
-  <p class="section-label" style="margin-top:1rem;">Gemini API Key — Optional (for AI images)</p>
+  <p class="section-label" style="margin-top:1rem;">Gemini API Key — Optional (better AI images)</p>
   <div class="key-input-wrap">
     <input type="password" id="gemini-key-input" placeholder="AIza..." autocomplete="off" />
     <button type="button" class="toggle-key" onclick="toggleGeminiVisibility()" id="eye-btn-gemini">👁</button>
   </div>
   <p style="font-size:0.6rem; color:#ffffff30; margin-top:0.5rem; line-height:1.6;">
-    Get a free key at <strong style="color:#e8b84b">aistudio.google.com</strong> → Get API Key. Leave blank to use Pollinations.ai (free, no key).
+    Get a free key at <strong style="color:#e8b84b">aistudio.google.com</strong>. Leave blank to use Pollinations.ai (free, no key needed).
   </p>
 
-  <div class="ffmpeg-note" style="margin-top:1rem;">
-    <strong>🎨 Image sources:</strong> Canvas (instant) → Pollinations.ai (free AI) → Gemini Imagen (best quality, needs key). All 3 used automatically — best available wins.
+  <div class="info-note" style="margin-top:1rem;">
+    <strong>🎨 Images:</strong> Canvas fallback (instant) → Pollinations.ai (free AI) → Gemini Imagen (best, needs key).<br>
+    <strong>🔊 Audio:</strong> Narration plays live while video records. Grant mic permission for audio-in-file.
   </div>
   <button type="button" class="btn-generate" onclick="saveKey()" style="margin-top:0.5rem;">
     CONTINUE →
@@ -539,9 +521,15 @@ select {
 <!-- MAIN APP SCREEN -->
 
 <div id="app-screen">
+  <div id="audio-banner">
+    🎙 <strong>Tip:</strong> For narration audio inside the video file, tap <em>Grant Mic</em> below — we only use it to capture your device's speech output. Or skip for silent video (TTS still plays aloud during generation).
+    <br><button type="button" onclick="requestMic()" style="margin-top:0.5rem; padding:0.3rem 0.8rem; background:#38bdf820; border:1px solid #38bdf860; border-radius:4px; color:#38bdf8; font-family:var(--mono); font-size:0.65rem; cursor:pointer;">Grant Mic →</button>
+    <button type="button" onclick="document.getElementById('audio-banner').style.display='none'" style="margin-top:0.5rem; margin-left:0.5rem; padding:0.3rem 0.8rem; background:transparent; border:1px solid #ffffff20; border-radius:4px; color:#ffffff40; font-family:var(--mono); font-size:0.65rem; cursor:pointer;">Skip</button>
+  </div>
+
   <p class="section-label">Your Notes</p>
   <div class="notes-area">
-    <textarea id="notes-input" placeholder="Paste your notes here...&#10;&#10;E.g.: Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen. The light reactions occur in the thylakoid membranes..." rows="8" oninput="updateCharCount()"></textarea>
+    <textarea id="notes-input" placeholder="Paste your notes here...&#10;&#10;E.g.: Photosynthesis is the process by which plants use sunlight, water and carbon dioxide to produce glucose and oxygen..." rows="8" oninput="updateCharCount()"></textarea>
     <span class="char-count" id="char-count">0</span>
   </div>
 
@@ -577,18 +565,14 @@ select {
     </div>
     <div class="setting-block">
       <label>Voice</label>
-      <select id="voice-select" id="voice-select">
-        <!-- Populated by JS -->
-      </select>
+      <select id="voice-select"></select>
     </div>
   </div>
 
   <button class="btn-generate" id="gen-btn" onclick="startGeneration()">
     🎬 GENERATE VIDEO
   </button>
-
-<button class="btn-secondary" onclick="changeKey()">⚙ Change API Key</button>
-
+  <button class="btn-secondary" onclick="changeKey()">⚙ Change API Key</button>
 </div>
 
 <!-- PROGRESS SCREEN -->
@@ -610,9 +594,9 @@ select {
       <span class="step-icon">🔊</span>
       <span>Preparing narration (Web Speech API)</span>
     </li>
-    <li class="step-item" id="step-video" data-icon="🎞" data-label="Rendering MP4 (Canvas MediaRecorder)">
+    <li class="step-item" id="step-video" data-icon="🎞" data-label="Rendering video (Canvas + MediaRecorder)">
       <span class="step-icon">🎞</span>
-      <span>Rendering MP4 (Canvas MediaRecorder)</span>
+      <span>Rendering video (Canvas + MediaRecorder)</span>
     </li>
   </ul>
 
@@ -630,23 +614,19 @@ select {
     <div class="done-title">VIDEO READY</div>
     <div class="done-meta" id="done-meta">— scenes · — seconds</div>
   </div>
-
   <button class="btn-download" id="download-btn" onclick="downloadVideo()">
-    ⬇ DOWNLOAD MP4
+    ⬇ DOWNLOAD VIDEO
   </button>
   <button class="btn-again" onclick="startOver()">
     ↩ Convert new notes
   </button>
 </div>
 
-<!-- TOAST -->
-
 <div id="toast"></div>
 
-<!-- Inline critical setup so Safari doesn't block it -->
+<!-- ── KEY MANAGEMENT (inline, runs before module) ── -->
 
 <script>
-  // ── KEY MANAGEMENT (inline so it works before module loads) ──
   function showScreen(id) {
     ['setup-screen','app-screen','progress-screen','done-screen'].forEach(s => {
       document.getElementById(s).style.display = 'none';
@@ -658,26 +638,21 @@ select {
     var t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
-    setTimeout(function(){ t.classList.remove('show'); }, 5000);
+    setTimeout(function(){ t.classList.remove('show'); }, 6000);
   }
 
   function toggleKeyVisibility() {
     var inp = document.getElementById('api-key-input');
     var btn = document.getElementById('eye-btn');
-    if (inp.type === 'password') {
-      inp.type = 'text';
-      btn.textContent = '🙈';
-    } else {
-      inp.type = 'password';
-      btn.textContent = '👁';
-    }
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
   }
 
   function toggleGeminiVisibility() {
     var inp = document.getElementById('gemini-key-input');
     var btn = document.getElementById('eye-btn-gemini');
-    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
-    else { inp.type = 'password'; btn.textContent = '👁'; }
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
   }
 
   function saveKey() {
@@ -692,9 +667,9 @@ select {
       try { localStorage.setItem('nf_gemini_key', gemVal); } catch(e) {}
       window._geminiKey = gemVal;
     }
-
     showScreen('app-screen');
-    if (window._appReady) window._appReady(val);
+    // Show mic banner after a short delay
+    setTimeout(function(){ document.getElementById('audio-banner').style.display='block'; }, 400);
   }
 
   function changeKey() {
@@ -706,11 +681,10 @@ select {
   }
 
   function updateCharCount() {
-    var n = document.getElementById('notes-input').value.length;
-    document.getElementById('char-count').textContent = n;
+    document.getElementById('char-count').textContent =
+      document.getElementById('notes-input').value.length;
   }
 
-  // Check on load
   document.addEventListener('DOMContentLoaded', function() {
     var saved = ''; try { saved = localStorage.getItem('nf_groq_key') || ''; } catch(e) {}
     var savedGem = ''; try { savedGem = localStorage.getItem('nf_gemini_key') || ''; } catch(e) {}
@@ -718,19 +692,37 @@ select {
     if (saved && saved.startsWith('gsk_')) {
       window._groqKey = saved;
       showScreen('app-screen');
+      setTimeout(function(){ document.getElementById('audio-banner').style.display='block'; }, 600);
     } else {
       showScreen('setup-screen');
     }
   });
 </script>
 
-<!-- App logic — pure browser APIs, no FFmpeg WASM -->
+<!-- ── APP LOGIC ── -->
 
 <script type="module">
   let videoBlob = null;
   let scenes = [];
+  // micStream: from getUserMedia if user grants permission
+  let micStream = null;
 
-  // Populate voices
+  // ── MIC PERMISSION (called from banner) ──
+  window.requestMic = async () => {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      document.getElementById('audio-banner').innerHTML =
+        '✅ <strong>Mic granted!</strong> Your narration will be included in the video file.';
+      document.getElementById('audio-banner').style.background = '#4dff9115';
+      document.getElementById('audio-banner').style.borderColor = '#4dff9130';
+      document.getElementById('audio-banner').style.color = '#4dff91';
+    } catch(e) {
+      document.getElementById('audio-banner').innerHTML =
+        '⚠️ Mic access denied. Video will be silent; narration still plays aloud during generation.';
+    }
+  };
+
+  // ── VOICES ──
   function populateVoices() {
     var sel = document.getElementById('voice-select');
     if (!sel) return;
@@ -740,7 +732,7 @@ select {
     voices.forEach(v => {
       var opt = document.createElement('option');
       opt.value = v.name;
-      opt.textContent = v.name.replace('Google ','').replace(' English','').slice(0,20);
+      opt.textContent = v.name.replace('Google ','').replace(' English','').slice(0, 22);
       sel.appendChild(opt);
     });
   }
@@ -752,11 +744,10 @@ select {
     const notes = document.getElementById('notes-input').value.trim();
     if (notes.length < 50) { toastMsg('Please paste at least a few sentences.'); return; }
 
-    const groqKey     = window._groqKey || localStorage.getItem('nf_groq_key') || '';
-    const sceneCount  = parseInt(document.getElementById('scene-count').value);
-    const imageStyle  = document.getElementById('image-style').value;
-    const sceneDur    = parseInt(document.getElementById('scene-duration').value);
-    const voiceName   = document.getElementById('voice-select').value;
+    const groqKey    = window._groqKey || localStorage.getItem('nf_groq_key') || '';
+    const sceneCount = parseInt(document.getElementById('scene-count').value);
+    const imageStyle = document.getElementById('image-style').value;
+    const sceneDur   = parseInt(document.getElementById('scene-duration').value);
 
     if (!groqKey) { toastMsg('No API key found — please re-enter it.'); showScreen('setup-screen'); return; }
 
@@ -772,26 +763,31 @@ select {
     });
 
     try {
-      setStep('step-parse','active'); setDetail('Sending notes to Groq…');
+      // ── STEP 1: Parse ──
+      setStep('step-parse', 'active'); setDetail('Sending notes to Groq…');
       scenes = await parseWithGroq(notes, sceneCount, groqKey);
-      setStep('step-parse','done');
+      setStep('step-parse', 'done');
       renderPlaceholders(scenes.length);
 
-      setStep('step-images','active'); setDetail('Generating images…');
+      // ── STEP 2: Images ──
+      setStep('step-images', 'active'); setDetail('Generating images…');
       const imgBlobs = await genImages(scenes, imageStyle);
-      setStep('step-images','done');
-      imgBlobs.forEach((b,i) => fillThumb(i,b,false));
+      setStep('step-images', 'done');
+      imgBlobs.forEach((b, i) => fillThumb(i, b, false));
 
-      setStep('step-audio','active'); setDetail('Recording narration…');
-      await genAudio(scenes, voiceName);
-      setStep('step-audio','done');
+      // ── STEP 3: "Narration" (warm up TTS voices) ──
+      setStep('step-audio', 'active'); setDetail('Warming up narration voices…');
+      await warmUpTTS();
+      setStep('step-audio', 'done');
 
-      setStep('step-video','active'); setDetail('Rendering video…');
+      // ── STEP 4: Render video ──
+      setStep('step-video', 'active'); setDetail('Rendering video…');
       videoBlob = await renderVideo(imgBlobs, scenes, sceneDur);
-      setStep('step-video','done');
+      setStep('step-video', 'done');
 
       const ext = videoBlob.type.includes('mp4') ? 'MP4' : 'WEBM';
-      document.getElementById('done-meta').textContent = `${scenes.length} scenes · ${scenes.length * sceneDur}s · ${ext}`;
+      document.getElementById('done-meta').textContent =
+        `${scenes.length} scenes · ${scenes.length * sceneDur}s · ${ext}`;
       showScreen('done-screen');
 
     } catch(err) {
@@ -805,7 +801,7 @@ select {
   // ── GROQ ──
   async function parseWithGroq(notes, count, key) {
     const prompt = `Convert these study notes into exactly ${count} video scenes.
-Return ONLY a JSON array (no markdown) where each item has:
+Return ONLY a JSON array (no markdown, no extra text) where each item has:
 - "title": 3-5 word scene title
 - "narration": max 25 words spoken explanation
 - "imagePrompt": detailed visual description for image AI
@@ -815,33 +811,43 @@ Notes: """${notes}"""`;
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role:'user', content: prompt }], max_tokens: 2000 })
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 2000
+      })
     });
-    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `Groq ${res.status}`); }
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error?.message || `Groq error ${res.status}`);
+    }
     const d = await res.json();
-    const txt = d.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
+    const txt = d.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
     return JSON.parse(txt);
   }
 
   // ── IMAGE GENERATION ──
-  // Strategy: 1) Canvas instantly, 2) Pollinations upgrade, 3) Gemini upgrade (if key present)
+  // FIX: images are generated as canvas blobs first (always works),
+  //      then upgraded via Pollinations using fetch+blob URL (avoids CORS taint),
+  //      or Gemini if key available.
   async function genImages(scenes, style) {
     scenes.forEach((_, i) => fillThumb(i, null, true));
     const blobs = [];
 
-    // Step 1: canvas images instantly
+    // Step 1: canvas images instantly (always works, no network)
     for (let i = 0; i < scenes.length; i++) {
-      setDetail(`Creating canvas scene ${i+1} of ${scenes.length}…`);
+      setDetail(`Creating canvas scene ${i + 1} of ${scenes.length}…`);
       const blob = await makeRichCanvasImage(scenes[i], i, style);
       blobs.push(blob);
       fillThumb(i, blob, false);
     }
 
-    // Step 2: upgrade with Pollinations (non-blocking background attempt)
-    setDetail('Canvas done! Upgrading with AI images…');
+    // Step 2: upgrade with Pollinations via fetch (not Image element)
+    // fetch avoids the CORS canvas taint issue that breaks toBlob on mobile
+    setDetail('Upgrading with AI images (Pollinations)…');
     await upgradeWithPollinations(scenes, style, blobs);
 
-    // Step 3: upgrade with Gemini if key available (sequential, best quality)
+    // Step 3: Gemini if key present
     const gemKey = window._geminiKey || '';
     if (gemKey) {
       setDetail('Upgrading with Gemini Imagen…');
@@ -852,47 +858,90 @@ Notes: """${notes}"""`;
     return blobs;
   }
 
-  // Pollinations upgrade — use Image element (avoids CORS fetch issues on mobile)
+  // ── FIX: Pollinations via fetch() with no-cors fallback to Image element ──
   async function upgradeWithPollinations(scenes, style, blobs) {
     for (let i = 0; i < scenes.length; i++) {
       try {
-        setDetail(`AI image: scene ${i+1} of ${scenes.length}…`);
-        const p = encodeURIComponent(`${scenes[i].imagePrompt}, ${style}, high quality, cinematic, no text`);
+        setDetail(`AI image: scene ${i + 1} of ${scenes.length}…`);
+        const prompt = encodeURIComponent(
+          `${scenes[i].imagePrompt}, ${style}, cinematic lighting, high quality, no text`
+        );
         const seed = Math.floor(Math.random() * 999999);
-        const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true&model=flux`;
+        const url = `https://image.pollinations.ai/prompt/${prompt}?width=1024&height=576&seed=${seed}&nologo=true&model=flux`;
 
-        // Load via Image element (bypasses CORS restrictions on mobile)
-        const blob = await new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          const timer = setTimeout(() => reject(new Error('timeout')), 45000);
-          img.onload = () => {
-            clearTimeout(timer);
-            // Draw to offscreen canvas → blob
-            const oc = document.createElement('canvas');
-            oc.width = img.naturalWidth || 1024;
-            oc.height = img.naturalHeight || 576;
-            oc.getContext('2d').drawImage(img, 0, 0);
-            oc.toBlob(b => b && b.size > 5000 ? resolve(b) : reject(new Error('tiny')), 'image/jpeg', 0.92);
-          };
-          img.onerror = () => { clearTimeout(timer); reject(new Error('load error')); };
-          img.src = url;
-        });
+        // Try fetch first (works on desktop + some mobile browsers)
+        let blob = null;
+        try {
+          const res = await fetchWithTimeout(url, 40000);
+          if (res.ok) {
+            blob = await res.blob();
+            if (!blob || blob.size < 5000) blob = null;
+          }
+        } catch(fetchErr) {
+          // fetch failed (CORS or network) — fall through to Image fallback
+        }
 
-        blobs[i] = blob;
-        fillThumb(i, blob, false);
-        setDetail(`AI image: scene ${i+1} done ✓`);
+        // Fallback: load via Image → draw to clean canvas → toBlob
+        // Key fix: use a FRESH canvas (not tainted) by drawing to a new offscreen canvas
+        // that we never mark crossOrigin, which works if the server sends CORS headers.
+        // If the canvas becomes tainted, toBlob throws — we catch that and keep the original.
+        if (!blob) {
+          blob = await loadImageToBlob(url, 40000);
+        }
+
+        if (blob && blob.size > 5000) {
+          blobs[i] = blob;
+          fillThumb(i, blob, false);
+          setDetail(`AI image: scene ${i + 1} done ✓`);
+        }
       } catch(e) {
-        setDetail(`AI image: scene ${i+1} using canvas fallback`);
+        // Keep canvas fallback — already in blobs[i]
+        setDetail(`AI image: scene ${i + 1} using canvas fallback`);
       }
     }
+  }
+
+  // Fetch with timeout helper
+  function fetchWithTimeout(url, ms) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+  }
+
+  // Load image URL → blob via Image element + offscreen canvas
+  // If canvas becomes tainted, returns null (we catch that above)
+  function loadImageToBlob(url, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const timer = setTimeout(() => reject(new Error('timeout')), timeoutMs);
+      img.onload = () => {
+        clearTimeout(timer);
+        try {
+          const oc = document.createElement('canvas');
+          oc.width = img.naturalWidth || 1024;
+          oc.height = img.naturalHeight || 576;
+          oc.getContext('2d').drawImage(img, 0, 0);
+          oc.toBlob(b => {
+            if (b && b.size > 5000) resolve(b);
+            else reject(new Error('tiny or null blob'));
+          }, 'image/jpeg', 0.92);
+        } catch(e) {
+          reject(e); // tainted canvas — caller keeps original
+        }
+      };
+      img.onerror = () => { clearTimeout(timer); reject(new Error('load error')); };
+      // Do NOT set crossOrigin — let it load without CORS flag
+      // This means canvas will be tainted if server doesn't send CORS headers,
+      // but we catch the toBlob security error above.
+      img.src = url;
+    });
   }
 
   // Gemini Imagen upgrade
   async function upgradeWithGemini(scenes, style, blobs, apiKey) {
     for (let i = 0; i < scenes.length; i++) {
       try {
-        setDetail(`Gemini: generating scene ${i+1} of ${scenes.length}…`);
+        setDetail(`Gemini: generating scene ${i + 1} of ${scenes.length}…`);
         const prompt = `${scenes[i].imagePrompt}, ${style}, high quality, educational, vibrant, cinematic lighting, no text overlays`;
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
@@ -905,11 +954,7 @@ Notes: """${notes}"""`;
             })
           }
         );
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          console.warn('Gemini image error scene', i, err?.error?.message || res.status);
-          continue;
-        }
+        if (!res.ok) { console.warn('Gemini error scene', i, res.status); continue; }
         const data = await res.json();
         const b64 = data?.predictions?.[0]?.bytesBase64Encoded;
         if (!b64) continue;
@@ -920,7 +965,7 @@ Notes: """${notes}"""`;
         if (blob.size < 5000) continue;
         blobs[i] = blob;
         fillThumb(i, blob, false);
-        setDetail(`Gemini: scene ${i+1} upgraded ✓`);
+        setDetail(`Gemini: scene ${i + 1} upgraded ✓`);
       } catch(e) {
         console.warn('Gemini scene', i, 'failed:', e.message);
       }
@@ -950,8 +995,8 @@ Notes: """${notes}"""`;
     default: (ctx,cx,cy,r,c)=>{ ctx.strokeStyle=c; ctx.lineWidth=r*0.07; ctx.beginPath(); ctx.arc(cx,cy,r*0.7,0,Math.PI*2); ctx.stroke(); for(let a=0;a<6;a++){ const ang=a*Math.PI/3; ctx.beginPath(); ctx.moveTo(cx+Math.cos(ang)*r*0.25,cy+Math.sin(ang)*r*0.25); ctx.lineTo(cx+Math.cos(ang)*r*0.65,cy+Math.sin(ang)*r*0.65); ctx.stroke(); } ctx.fillStyle=c; ctx.beginPath(); ctx.arc(cx,cy,r*0.1,0,Math.PI*2); ctx.fill(); },
   };
 
-  function pickIcon(prompt='') {
-    const p = (prompt||'').toLowerCase();
+  function pickIcon(prompt = '') {
+    const p = (prompt || '').toLowerCase();
     if (/dna|gene|cell|bio|protein|chromosome/.test(p)) return ICONS.dna;
     if (/atom|electron|quantum|nuclear|particle/.test(p)) return ICONS.atom;
     if (/wave|sound|seismic|vibrat|frequen/.test(p)) return ICONS.wave;
@@ -963,92 +1008,99 @@ Notes: """${notes}"""`;
   }
 
   async function makeRichCanvasImage(scene, index, style) {
-    const W=1024, H=576;
+    const W = 1024, H = 576;
     const canvas = document.createElement('canvas');
-    canvas.width=W; canvas.height=H;
+    canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
     const pal = PALETTES[index % PALETTES.length];
 
-    // Gradient background
-    const grad = ctx.createLinearGradient(0,0,W,H);
+    const grad = ctx.createLinearGradient(0, 0, W, H);
     grad.addColorStop(0, pal.bg[0]);
     grad.addColorStop(1, pal.bg[1]);
     ctx.fillStyle = grad;
-    ctx.fillRect(0,0,W,H);
+    ctx.fillRect(0, 0, W, H);
 
-    // Subtle grid
     ctx.strokeStyle = pal.accent + '18';
     ctx.lineWidth = 1;
-    for(let x=0;x<W;x+=80){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
-    for(let y=0;y<H;y+=80){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    for (let x = 0; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
-    // Corner accent bars
     ctx.fillStyle = pal.accent + '40';
-    ctx.fillRect(0,0,5,H); ctx.fillRect(W-5,0,5,H);
+    ctx.fillRect(0, 0, 5, H); ctx.fillRect(W - 5, 0, 5, H);
     ctx.fillStyle = pal.accent + '25';
-    ctx.fillRect(0,0,W,4); ctx.fillRect(0,H-4,W,4);
+    ctx.fillRect(0, 0, W, 4); ctx.fillRect(0, H - 4, W, 4);
 
-    // Radial glow
-    const glow = ctx.createRadialGradient(W/2,H/2-20,0,W/2,H/2-20,260);
-    glow.addColorStop(0, pal.accent+'22');
+    const glow = ctx.createRadialGradient(W / 2, H / 2 - 20, 0, W / 2, H / 2 - 20, 260);
+    glow.addColorStop(0, pal.accent + '22');
     glow.addColorStop(1, 'transparent');
     ctx.fillStyle = glow;
-    ctx.fillRect(0,0,W,H);
+    ctx.fillRect(0, 0, W, H);
 
-    // Central icon
     ctx.globalAlpha = 0.28;
-    pickIcon(scene.imagePrompt || scene.title)(ctx, W/2, H/2-30, 170, pal.accent);
+    pickIcon(scene.imagePrompt || scene.title)(ctx, W / 2, H / 2 - 30, 170, pal.accent);
     ctx.globalAlpha = 1;
 
-    // Scene number badge
     ctx.fillStyle = pal.accent;
-    ctx.fillRect(28,24,88,30);
+    ctx.fillRect(28, 24, 88, 30);
     ctx.fillStyle = '#000000dd';
     ctx.font = 'bold 14px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`SCENE ${String(index+1).padStart(2,'0')}`, 36, 39);
+    ctx.fillText(`SCENE ${String(index + 1).padStart(2, '0')}`, 36, 39);
 
-    // Dot pattern (top-right)
     ctx.fillStyle = pal.accent + '50';
-    for(let dx=0;dx<5;dx++) for(let dy=0;dy<3;dy++){
-      ctx.beginPath(); ctx.arc(W-50+dx*12, 30+dy*12, 2.5, 0, Math.PI*2); ctx.fill();
+    for (let dx = 0; dx < 5; dx++) for (let dy = 0; dy < 3; dy++) {
+      ctx.beginPath(); ctx.arc(W - 50 + dx * 12, 30 + dy * 12, 2.5, 0, Math.PI * 2); ctx.fill();
     }
 
-    // Title bar
     const barH = 80;
-    const barGrad = ctx.createLinearGradient(0,H-barH,0,H);
-    barGrad.addColorStop(0,'#00000000');
-    barGrad.addColorStop(0.25,'#000000bb');
-    barGrad.addColorStop(1,'#000000f0');
+    const barGrad = ctx.createLinearGradient(0, H - barH, 0, H);
+    barGrad.addColorStop(0, '#00000000');
+    barGrad.addColorStop(0.25, '#000000bb');
+    barGrad.addColorStop(1, '#000000f0');
     ctx.fillStyle = barGrad;
-    ctx.fillRect(0,H-barH,W,barH);
+    ctx.fillRect(0, H - barH, W, barH);
 
-    // Accent line
     ctx.fillStyle = pal.accent;
-    ctx.fillRect(0,H-barH,W,3);
+    ctx.fillRect(0, H - barH, W, 3);
 
-    // Title text with word wrap
-    const title = scene.title || `Scene ${index+1}`;
+    const title = scene.title || `Scene ${index + 1}`;
     ctx.fillStyle = pal.text;
     ctx.font = 'bold 34px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const words = title.split(' ');
-    let line='', lines=[];
-    for(const w of words){
-      const test = line ? line+' '+w : w;
-      if(ctx.measureText(test).width > W-100 && line){ lines.push(line); line=w; } else line=test;
+    let line = '', lines = [];
+    for (const w of words) {
+      const test = line ? line + ' ' + w : w;
+      if (ctx.measureText(test).width > W - 100 && line) { lines.push(line); line = w; } else line = test;
     }
     lines.push(line);
-    const lineH=38, startY = lines.length>1 ? H-barH/2-lineH/2+4 : H-barH/2+4;
-    lines.forEach((l,li)=>{ ctx.fillText(l, W/2, startY+li*lineH); });
+    const lineH = 38;
+    const startY = lines.length > 1 ? H - barH / 2 - lineH / 2 + 4 : H - barH / 2 + 4;
+    lines.forEach((l, li) => { ctx.fillText(l, W / 2, startY + li * lineH); });
 
+    // FIX: use toBlob from a clean canvas (not tainted by external images)
     return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
   }
 
-    // ── TTS spoken live during video render (audio captured into recording) ──
-  function speakSceneIntoStream(text, voiceName, destNode) {
+  // ── TTS WARM UP (load voices, test speech) ──
+  async function warmUpTTS() {
+    return new Promise(resolve => {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0;
+        u.onend = resolve;
+        u.onerror = resolve;
+        window.speechSynthesis.speak(u);
+        setTimeout(resolve, 1000); // don't block if silence utterance takes too long
+      } catch(e) { resolve(); }
+    });
+  }
+
+  // ── SPEAK NARRATION (live during video render) ──
+  function speakScene(text, voiceName) {
     return new Promise(resolve => {
       try {
         window.speechSynthesis.cancel();
@@ -1058,15 +1110,26 @@ Notes: """${notes}"""`;
           || vs.find(x => x.lang.startsWith('en'))
           || vs[0];
         if (v) u.voice = v;
-        u.rate = 0.85;
-        u.onend = () => setTimeout(resolve, 300);
+        u.rate = 0.88;
+        u.pitch = 1.0;
+        u.onend = () => setTimeout(resolve, 400);
         u.onerror = () => resolve();
         window.speechSynthesis.speak(u);
+        // Safety timeout: resolve after estimated speech time + buffer
+        const estimatedMs = Math.max(3000, text.split(' ').length * 450);
+        setTimeout(resolve, estimatedMs);
       } catch(e) { resolve(); }
     });
   }
 
-  // ── VIDEO RENDERING with live TTS audio captured ──
+  // ── VIDEO RENDERING ──
+  // FIX SUMMARY:
+  //   1. Images are pre-loaded as blob URLs → draw via HTMLImageElement from blob URL
+  //      (blob URLs are never cross-origin → canvas stays clean → toBlob always works)
+  //   2. Audio: if micStream exists (user granted mic), add audio tracks to recording
+  //      This captures TTS that plays through the device speaker → mic loop (common workaround)
+  //      Without mic: video is silent, but TTS still plays aloud during generation
+  //   3. Use requestAnimationFrame for smooth frame drawing during rendering
   async function renderVideo(imgBlobs, scenes, durPerScene) {
     const W = 1280, H = 720;
     const FPS = 24;
@@ -1075,49 +1138,62 @@ Notes: """${notes}"""`;
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // Audio context to capture system TTS output
-    let audioCtx, destNode, audioStream;
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      destNode = audioCtx.createMediaStreamDestination();
-      audioStream = destNode.stream;
-      // Resume context (required after user gesture on mobile)
-      if (audioCtx.state === 'suspended') await audioCtx.resume();
-    } catch(e) {
-      audioStream = null;
-    }
-
-    // Build combined stream: video + audio (if available)
+    // Build stream: video only, or video+mic if permission granted
     const videoStream = canvas.captureStream(FPS);
     let combinedStream = videoStream;
-    if (audioStream && audioStream.getAudioTracks().length > 0) {
-      const tracks = [...videoStream.getVideoTracks(), ...audioStream.getAudioTracks()];
-      combinedStream = new MediaStream(tracks);
+
+    if (micStream) {
+      try {
+        // Clone mic tracks into the combined stream
+        const tracks = [...videoStream.getVideoTracks(), ...micStream.getAudioTracks()];
+        combinedStream = new MediaStream(tracks);
+      } catch(e) {
+        combinedStream = videoStream;
+      }
     }
 
-    const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']
-      .find(t => { try { return MediaRecorder.isTypeSupported(t); } catch(e) { return false; } }) || 'video/webm';
+    // Pick best supported mime type
+    const mimeType = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+      'video/mp4'
+    ].find(t => { try { return MediaRecorder.isTypeSupported(t); } catch(e) { return false; } })
+      || 'video/webm';
 
     const chunks = [];
-    const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 2_500_000 });
+    const recorder = new MediaRecorder(combinedStream, {
+      mimeType,
+      videoBitsPerSecond: 3_000_000
+    });
     recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
-
-    const recordingDone = new Promise(resolve => recorder.onstop = resolve);
-    recorder.start(200);
+    const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
+    recorder.start(100); // collect chunks every 100ms
 
     const voiceName = document.getElementById('voice-select')?.value || '';
 
     for (let i = 0; i < imgBlobs.length; i++) {
-      setDetail(`Rendering scene ${i+1} of ${imgBlobs.length}…`);
+      setDetail(`Rendering scene ${i + 1} of ${imgBlobs.length}…`);
 
-      const img = await loadImage(imgBlobs[i]);
-      const scale = Math.max(W / img.width, H / img.height);
-      const sw = img.width * scale, sh = img.height * scale;
-      const ox = (W - sw) / 2, oy = (H - sh) / 2;
-      const title = scenes[i].title || `Scene ${i+1}`;
+      // FIX: load image from blob URL (blob: URLs are same-origin, canvas stays clean)
+      const blobUrl = URL.createObjectURL(imgBlobs[i]);
+      const img = await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = reject;
+        im.src = blobUrl;
+      });
+      // Don't revoke yet — we need img for drawing
+
+      const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+      const sw = img.naturalWidth * scale;
+      const sh = img.naturalHeight * scale;
+      const ox = (W - sw) / 2;
+      const oy = (H - sh) / 2;
+      const title = scenes[i].title || `Scene ${i + 1}`;
       const narration = scenes[i].narration || '';
 
-      // Draw static frame function
+      // Draw frame function
       const drawFrame = () => {
         ctx.drawImage(img, ox, oy, sw, sh);
 
@@ -1144,45 +1220,43 @@ Notes: """${notes}"""`;
         ctx.font = 'bold 13px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`SCENE ${String(i+1).padStart(2,'0')}`, 32, 34);
+        ctx.fillText(`SCENE ${String(i + 1).padStart(2, '0')}`, 32, 34);
       };
 
-      // Start drawing frames at FPS while TTS speaks
-      let speaking = true;
-      const frameInterval = setInterval(drawFrame, 1000 / FPS);
+      // Draw frames continuously while TTS speaks
+      let drawing = true;
+      const frameTick = () => {
+        if (!drawing) return;
+        drawFrame();
+        requestAnimationFrame(frameTick);
+      };
+      requestAnimationFrame(frameTick);
 
-      // Speak narration live (captured into audio stream if AudioContext worked)
-      await speakSceneIntoStream(narration, voiceName, destNode);
+      // Speak narration (device TTS plays aloud; mic captures it if granted)
+      await speakScene(narration, voiceName);
 
-      // Hold frame for remaining scene duration if TTS was shorter
-      const minDur = durPerScene * 1000;
-      await new Promise(r => setTimeout(r, 500)); // brief pause between scenes
+      // Hold a minimum duration per scene
+      const minHold = Math.max(0, durPerScene * 1000 - 500);
+      await sleep(minHold);
 
-      clearInterval(frameInterval);
-      drawFrame(); // one final clean frame
-      speaking = false;
+      drawing = false;
+      drawFrame(); // final clean frame
+      URL.revokeObjectURL(blobUrl);
+
+      await sleep(300); // brief gap between scenes
     }
+
+    // Black fade-out frame at end
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+    await sleep(400);
 
     recorder.stop();
     await recordingDone;
-    if (audioCtx) audioCtx.close().catch(() => {});
+
+    if (!chunks.length) throw new Error('No video data recorded. Try a different browser.');
 
     return new Blob(chunks, { type: mimeType });
-  }
-
-  // genAudio is now a no-op since TTS happens during renderVideo
-  async function genAudio(scenes, voiceName) {
-    // TTS is now integrated into renderVideo for proper audio capture
-  }
-
-  function loadImage(blob) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const url = URL.createObjectURL(blob);
-      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-      img.onerror = reject;
-      img.src = url;
-    });
   }
 
   // ── DOWNLOAD / RESET ──
@@ -1191,14 +1265,16 @@ Notes: """${notes}"""`;
     const url = URL.createObjectURL(videoBlob);
     const a = document.createElement('a');
     const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-    a.href = url; a.download = `notefilm.${ext}`; a.click();
+    a.href = url;
+    a.download = `notefilm-${Date.now()}.${ext}`;
+    a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
   window.startOver = () => {
-    document.getElementById('notes-input').value='';
-    document.getElementById('char-count').textContent='0';
-    videoBlob=null; scenes=[];
+    document.getElementById('notes-input').value = '';
+    document.getElementById('char-count').textContent = '0';
+    videoBlob = null; scenes = [];
     showScreen('app-screen');
   };
 
@@ -1214,26 +1290,33 @@ Notes: """${notes}"""`;
     el.innerHTML = `${icons[state]}<span>${el.dataset.label}</span>`;
   }
 
-  function setDetail(msg) { document.getElementById('progress-detail').textContent = msg; }
+  function setDetail(msg) {
+    const el = document.getElementById('progress-detail');
+    if (el) el.textContent = msg;
+  }
 
   function renderPlaceholders(n) {
     const g = document.getElementById('scenes-grid');
-    g.innerHTML='';
-    document.getElementById('scenes-label').style.display='block';
-    for(let i=0;i<n;i++) {
-      g.innerHTML+=`<div class="scene-thumb" id="thumb-${i}"><div class="img-placeholder">🎨</div><span class="scene-num">SCENE ${String(i+1).padStart(2,'0')}</span></div>`;
+    g.innerHTML = '';
+    document.getElementById('scenes-label').style.display = 'block';
+    for (let i = 0; i < n; i++) {
+      g.innerHTML += `<div class="scene-thumb" id="thumb-${i}">
+        <div class="img-placeholder">🎨</div>
+        <span class="scene-num">SCENE ${String(i + 1).padStart(2, '0')}</span>
+      </div>`;
     }
   }
 
   function fillThumb(i, blob, loading) {
     const el = document.getElementById(`thumb-${i}`);
     if (!el) return;
-    if (loading) { el.querySelector('.img-placeholder').textContent='⏳'; return; }
+    if (loading) { el.querySelector('.img-placeholder').textContent = '⏳'; return; }
     const url = URL.createObjectURL(blob);
-    el.innerHTML=`<img src="${url}" onload="this.classList.add('loaded')"/><span class="scene-num">SCENE ${String(i+1).padStart(2,'0')}</span>`;
+    el.innerHTML = `<img src="${url}" onload="this.classList.add('loaded')" />
+      <span class="scene-num">SCENE ${String(i + 1).padStart(2, '0')}</span>`;
   }
 
-  function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 
 </body>
