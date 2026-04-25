@@ -809,51 +809,55 @@ Notes: """${notes}"""`;
     return JSON.parse(txt);
   }
 
-  // ── POLLINATIONS ──
+  // ── POLLINATIONS — parallel for speed ──
   async function genImages(scenes, style) {
-    const blobs = [];
-    for (let i = 0; i < scenes.length; i++) {
-      setDetail(`Image ${i+1} of ${scenes.length}…`);
-      fillThumb(i, null, true);
-      const p = encodeURIComponent(`${scenes[i].imagePrompt}, ${style}, high quality, no text`);
-      const seed = Math.floor(Math.random()*999999);
-      const r = await fetch(`https://image.pollinations.ai/prompt/${p}?width=1280&height=720&seed=${seed}&nologo=true`);
-      if (!r.ok) throw new Error(`Image ${i+1} failed`);
-      blobs.push(await r.blob());
-      if (i < scenes.length-1) await sleep(500);
-    }
-    return blobs;
+    scenes.forEach((_, i) => fillThumb(i, null, true));
+    setDetail('Generating all images in parallel — much faster!');
+
+    const promises = scenes.map((scene, i) => {
+      const p = encodeURIComponent(`${scene.imagePrompt}, ${style}, high quality, educational, no text`);
+      const seed = Math.floor(Math.random() * 999999);
+      const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true`;
+      return fetch(url)
+        .then(r => { if (!r.ok) throw new Error(`Image ${i+1} failed`); return r.blob(); })
+        .then(blob => { setDetail(`Image ${i+1} of ${scenes.length} ready...`); return blob; });
+    });
+
+    return await Promise.all(promises);
   }
 
-  // ── TTS ──
+    // ── TTS — Safari-safe: use silent audio, narration plays live ──
   async function genAudio(scenes, voiceName) {
     const blobs = [];
+    // Speak all narrations live (so user hears them)
+    // Use silent WAV for video track (Safari MediaRecorder blocks)
     for (let i = 0; i < scenes.length; i++) {
-      setDetail(`Narrating scene ${i+1}…`);
-      blobs.push(await ttsBlob(scenes[i].narration, voiceName));
+      setDetail(`Narrating scene ${i+1} of ${scenes.length}…`);
+      // Speak out loud so user hears it
+      await speakAloud(scenes[i].narration, voiceName);
+      // Use silence for the video audio track
+      blobs.push(silentWav(3));
     }
     return blobs;
   }
 
-  function ttsBlob(text, voiceName) {
+  function speakAloud(text, voiceName) {
     return new Promise(resolve => {
       try {
-        const ctx = new (window.AudioContext||window.webkitAudioContext)();
-        const dest = ctx.createMediaStreamDestination();
-        const rec = new MediaRecorder(dest.stream);
-        const chunks = [];
-        rec.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
-        rec.onstop = () => resolve(new Blob(chunks,{type:'audio/webm'}));
-        rec.start();
+        window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         const vs = window.speechSynthesis.getVoices();
-        const v = vs.find(x=>x.name===voiceName)||vs.find(x=>x.lang.startsWith('en'))||vs[0];
-        if(v) u.voice = v;
+        const v = vs.find(x => x.name === voiceName)
+          || vs.find(x => x.lang.startsWith('en'))
+          || vs[0];
+        if (v) u.voice = v;
         u.rate = 0.9;
-        u.onend = () => setTimeout(()=>rec.stop(),400);
-        u.onerror = () => { rec.stop(); resolve(silentWav(3)); };
+        u.onend = () => resolve();
+        u.onerror = () => resolve();
+        // Timeout fallback — never hang more than 10s per scene
+        setTimeout(resolve, 10000);
         window.speechSynthesis.speak(u);
-      } catch(e) { resolve(silentWav(3)); }
+      } catch(e) { resolve(); }
     });
   }
 
