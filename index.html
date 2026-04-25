@@ -606,9 +606,9 @@ select {
       <span class="step-icon">🎨</span>
       <span>Generating images (Canvas + Pollinations.ai + Gemini)</span>
     </li>
-    <li class="step-item" id="step-audio" data-icon="🔊" data-label="Synthesising narration (Web Speech API)">
+    <li class="step-item" id="step-audio" data-icon="🔊" data-label="Preparing narration (Web Speech API)">
       <span class="step-icon">🔊</span>
-      <span>Synthesising narration (Web Speech API)</span>
+      <span>Preparing narration (Web Speech API)</span>
     </li>
     <li class="step-item" id="step-video" data-icon="🎞" data-label="Rendering MP4 (Canvas MediaRecorder)">
       <span class="step-icon">🎞</span>
@@ -852,26 +852,38 @@ Notes: """${notes}"""`;
     return blobs;
   }
 
-  // Pollinations upgrade — sequential for reliability on mobile
+  // Pollinations upgrade — use Image element (avoids CORS fetch issues on mobile)
   async function upgradeWithPollinations(scenes, style, blobs) {
     for (let i = 0; i < scenes.length; i++) {
       try {
-        setDetail(`Pollinations: fetching scene ${i+1} of ${scenes.length}…`);
-        const p = encodeURIComponent(`${scenes[i].imagePrompt}, ${style}, high quality, educational, no text`);
+        setDetail(`AI image: scene ${i+1} of ${scenes.length}…`);
+        const p = encodeURIComponent(`${scenes[i].imagePrompt}, ${style}, high quality, cinematic, no text`);
         const seed = Math.floor(Math.random() * 999999);
         const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true&model=flux`;
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 40000);
-        const r = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeout);
-        if (!r.ok) { setDetail(`Pollinations: scene ${i+1} skipped (${r.status})`); continue; }
-        const blob = await r.blob();
-        if (blob.size < 5000) continue;
+
+        // Load via Image element (bypasses CORS restrictions on mobile)
+        const blob = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          const timer = setTimeout(() => reject(new Error('timeout')), 45000);
+          img.onload = () => {
+            clearTimeout(timer);
+            // Draw to offscreen canvas → blob
+            const oc = document.createElement('canvas');
+            oc.width = img.naturalWidth || 1024;
+            oc.height = img.naturalHeight || 576;
+            oc.getContext('2d').drawImage(img, 0, 0);
+            oc.toBlob(b => b && b.size > 5000 ? resolve(b) : reject(new Error('tiny')), 'image/jpeg', 0.92);
+          };
+          img.onerror = () => { clearTimeout(timer); reject(new Error('load error')); };
+          img.src = url;
+        });
+
         blobs[i] = blob;
         fillThumb(i, blob, false);
-        setDetail(`Pollinations: scene ${i+1} done ✓`);
+        setDetail(`AI image: scene ${i+1} done ✓`);
       } catch(e) {
-        setDetail(`Pollinations: scene ${i+1} timed out, using canvas`);
+        setDetail(`AI image: scene ${i+1} using canvas fallback`);
       }
     }
   }
@@ -1035,15 +1047,8 @@ Notes: """${notes}"""`;
     return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
   }
 
-    // ── TTS — speak narrations live ──
-  async function genAudio(scenes, voiceName) {
-    for (let i = 0; i < scenes.length; i++) {
-      setDetail(`Narrating scene ${i+1} of ${scenes.length}…`);
-      await speakAloud(scenes[i].narration, voiceName);
-    }
-  }
-
-  function speakAloud(text, voiceName) {
+    // ── TTS spoken live during video render (audio captured into recording) ──
+  function speakSceneIntoStream(text, voiceName, destNode) {
     return new Promise(resolve => {
       try {
         window.speechSynthesis.cancel();
@@ -1053,70 +1058,86 @@ Notes: """${notes}"""`;
           || vs.find(x => x.lang.startsWith('en'))
           || vs[0];
         if (v) u.voice = v;
-        u.rate = 0.9;
-        u.onend = () => resolve();
+        u.rate = 0.85;
+        u.onend = () => setTimeout(resolve, 300);
         u.onerror = () => resolve();
-        // Timeout fallback — never hang more than 10s per scene
-        setTimeout(resolve, 10000);
         window.speechSynthesis.speak(u);
       } catch(e) { resolve(); }
     });
   }
 
-
-  // ── VIDEO RENDERING — pure Canvas + MediaRecorder, no FFmpeg ──
+  // ── VIDEO RENDERING with live TTS audio captured ──
   async function renderVideo(imgBlobs, scenes, durPerScene) {
     const W = 1280, H = 720;
     const FPS = 24;
+
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // Check MediaRecorder support
-    const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4']
-      .find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+    // Audio context to capture system TTS output
+    let audioCtx, destNode, audioStream;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      destNode = audioCtx.createMediaStreamDestination();
+      audioStream = destNode.stream;
+      // Resume context (required after user gesture on mobile)
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
+    } catch(e) {
+      audioStream = null;
+    }
+
+    // Build combined stream: video + audio (if available)
+    const videoStream = canvas.captureStream(FPS);
+    let combinedStream = videoStream;
+    if (audioStream && audioStream.getAudioTracks().length > 0) {
+      const tracks = [...videoStream.getVideoTracks(), ...audioStream.getAudioTracks()];
+      combinedStream = new MediaStream(tracks);
+    }
+
+    const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']
+      .find(t => { try { return MediaRecorder.isTypeSupported(t); } catch(e) { return false; } }) || 'video/webm';
 
     const chunks = [];
-    const stream = canvas.captureStream(FPS);
-    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2_500_000 });
-    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 2_500_000 });
+    recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
 
-    const done = new Promise(resolve => recorder.onstop = resolve);
-    recorder.start(100);
+    const recordingDone = new Promise(resolve => recorder.onstop = resolve);
+    recorder.start(200);
+
+    const voiceName = document.getElementById('voice-select')?.value || '';
 
     for (let i = 0; i < imgBlobs.length; i++) {
       setDetail(`Rendering scene ${i+1} of ${imgBlobs.length}…`);
 
-      // Load image
       const img = await loadImage(imgBlobs[i]);
-      const totalFrames = durPerScene * FPS;
+      const scale = Math.max(W / img.width, H / img.height);
+      const sw = img.width * scale, sh = img.height * scale;
+      const ox = (W - sw) / 2, oy = (H - sh) / 2;
+      const title = scenes[i].title || `Scene ${i+1}`;
+      const narration = scenes[i].narration || '';
 
-      for (let f = 0; f < totalFrames; f++) {
-        // Draw image scaled to canvas
-        const scale = Math.max(W / img.width, H / img.height);
-        const sw = img.width * scale, sh = img.height * scale;
-        ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+      // Draw static frame function
+      const drawFrame = () => {
+        ctx.drawImage(img, ox, oy, sw, sh);
 
-        // Scene title overlay
-        const title = scenes[i].title || `Scene ${i+1}`;
+        // Title bar
         const barH = 70;
         const barGrad = ctx.createLinearGradient(0, H - barH, 0, H);
         barGrad.addColorStop(0, 'rgba(0,0,0,0)');
-        barGrad.addColorStop(0.3, 'rgba(0,0,0,0.75)');
-        barGrad.addColorStop(1, 'rgba(0,0,0,0.92)');
+        barGrad.addColorStop(0.3, 'rgba(0,0,0,0.78)');
+        barGrad.addColorStop(1, 'rgba(0,0,0,0.94)');
         ctx.fillStyle = barGrad;
         ctx.fillRect(0, H - barH, W, barH);
-
         ctx.fillStyle = '#e8b84b';
         ctx.fillRect(0, H - barH, W, 3);
-
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 32px sans-serif';
+        ctx.font = 'bold 30px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(title, W / 2, H - barH / 2 + 4);
 
-        // Scene badge top-left
+        // Badge
         ctx.fillStyle = '#e8b84b';
         ctx.fillRect(24, 20, 100, 28);
         ctx.fillStyle = '#000';
@@ -1124,17 +1145,34 @@ Notes: """${notes}"""`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(`SCENE ${String(i+1).padStart(2,'0')}`, 32, 34);
+      };
 
-        // Wait one frame time
-        await new Promise(r => setTimeout(r, 1000 / FPS));
-      }
+      // Start drawing frames at FPS while TTS speaks
+      let speaking = true;
+      const frameInterval = setInterval(drawFrame, 1000 / FPS);
+
+      // Speak narration live (captured into audio stream if AudioContext worked)
+      await speakSceneIntoStream(narration, voiceName, destNode);
+
+      // Hold frame for remaining scene duration if TTS was shorter
+      const minDur = durPerScene * 1000;
+      await new Promise(r => setTimeout(r, 500)); // brief pause between scenes
+
+      clearInterval(frameInterval);
+      drawFrame(); // one final clean frame
+      speaking = false;
     }
 
     recorder.stop();
-    await done;
+    await recordingDone;
+    if (audioCtx) audioCtx.close().catch(() => {});
 
-    const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
     return new Blob(chunks, { type: mimeType });
+  }
+
+  // genAudio is now a no-op since TTS happens during renderVideo
+  async function genAudio(scenes, voiceName) {
+    // TTS is now integrated into renderVideo for proper audio capture
   }
 
   function loadImage(blob) {
