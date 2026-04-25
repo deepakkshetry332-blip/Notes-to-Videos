@@ -510,16 +510,26 @@ select {
 <!-- SETUP SCREEN -->
 
 <div id="setup-screen">
-  <p class="section-label">Groq API Key — 100% Free</p>
+  <p class="section-label">Groq API Key — Required (Free)</p>
   <div class="key-input-wrap">
     <input type="password" id="api-key-input" placeholder="gsk_..." autocomplete="off" />
     <button type="button" class="toggle-key" onclick="toggleKeyVisibility()" id="eye-btn">👁</button>
   </div>
   <p style="font-size:0.6rem; color:#ffffff30; margin-top:0.5rem; line-height:1.6;">
-    Get a free key at <strong style="color:#e8b84b">console.groq.com</strong> → API Keys. Images are generated free via Pollinations.ai — no key needed.
+    Get a free key at <strong style="color:#e8b84b">console.groq.com</strong> → API Keys.
   </p>
+
+  <p class="section-label" style="margin-top:1rem;">Gemini API Key — Optional (for AI images)</p>
+  <div class="key-input-wrap">
+    <input type="password" id="gemini-key-input" placeholder="AIza..." autocomplete="off" />
+    <button type="button" class="toggle-key" onclick="toggleGeminiVisibility()" id="eye-btn-gemini">👁</button>
+  </div>
+  <p style="font-size:0.6rem; color:#ffffff30; margin-top:0.5rem; line-height:1.6;">
+    Get a free key at <strong style="color:#e8b84b">aistudio.google.com</strong> → Get API Key. Leave blank to use Pollinations.ai (free, no key).
+  </p>
+
   <div class="ffmpeg-note" style="margin-top:1rem;">
-    <strong>✅ 100% Free:</strong> Groq (LLM) + Pollinations.ai (images) + Web Speech (voice) + FFmpeg.wasm (video). No credit card. No limits.
+    <strong>🎨 Image sources:</strong> Canvas (instant) → Pollinations.ai (free AI) → Gemini Imagen (best quality, needs key). All 3 used automatically — best available wins.
   </div>
   <button type="button" class="btn-generate" onclick="saveKey()" style="margin-top:0.5rem;">
     CONTINUE →
@@ -592,9 +602,9 @@ select {
       <span class="step-icon">📝</span>
       <span>Analysing notes with Groq (Llama 3.3)</span>
     </li>
-    <li class="step-item" id="step-images" data-icon="🎨" data-label="Generating images (Canvas + Pollinations.ai)">
+    <li class="step-item" id="step-images" data-icon="🎨" data-label="Generating images (Canvas + Pollinations.ai + Gemini)">
       <span class="step-icon">🎨</span>
-      <span>Generating images (Canvas + Pollinations.ai)</span>
+      <span>Generating images (Canvas + Pollinations.ai + Gemini)</span>
     </li>
     <li class="step-item" id="step-audio" data-icon="🔊" data-label="Synthesising narration (Web Speech API)">
       <span class="step-icon">🔊</span>
@@ -663,26 +673,35 @@ select {
     }
   }
 
+  function toggleGeminiVisibility() {
+    var inp = document.getElementById('gemini-key-input');
+    var btn = document.getElementById('eye-btn-gemini');
+    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+    else { inp.type = 'password'; btn.textContent = '👁'; }
+  }
+
   function saveKey() {
     var val = document.getElementById('api-key-input').value.trim();
-    if (val.length < 10) {
-      toastMsg('Key too short — paste the full Groq key');
-      return;
-    }
-    if (!val.startsWith('gsk_')) {
-      toastMsg('Groq keys start with gsk_ — check and try again');
-      return;
-    }
+    if (val.length < 10) { toastMsg('Key too short — paste the full Groq key'); return; }
+    if (!val.startsWith('gsk_')) { toastMsg('Groq keys start with gsk_ — check and try again'); return; }
     try { localStorage.setItem('nf_groq_key', val); } catch(e) {}
     window._groqKey = val;
+
+    var gemVal = document.getElementById('gemini-key-input').value.trim();
+    if (gemVal.length > 10) {
+      try { localStorage.setItem('nf_gemini_key', gemVal); } catch(e) {}
+      window._geminiKey = gemVal;
+    }
+
     showScreen('app-screen');
     if (window._appReady) window._appReady(val);
   }
 
   function changeKey() {
-    var saved = '';
-    try { saved = localStorage.getItem('nf_groq_key') || ''; } catch(e) {}
+    var saved = ''; try { saved = localStorage.getItem('nf_groq_key') || ''; } catch(e) {}
     document.getElementById('api-key-input').value = saved;
+    var savedGem = ''; try { savedGem = localStorage.getItem('nf_gemini_key') || ''; } catch(e) {}
+    document.getElementById('gemini-key-input').value = savedGem;
     showScreen('setup-screen');
   }
 
@@ -693,8 +712,9 @@ select {
 
   // Check on load
   document.addEventListener('DOMContentLoaded', function() {
-    var saved = '';
-    try { saved = localStorage.getItem('nf_groq_key') || ''; } catch(e) {}
+    var saved = ''; try { saved = localStorage.getItem('nf_groq_key') || ''; } catch(e) {}
+    var savedGem = ''; try { savedGem = localStorage.getItem('nf_gemini_key') || ''; } catch(e) {}
+    if (savedGem) window._geminiKey = savedGem;
     if (saved && saved.startsWith('gsk_')) {
       window._groqKey = saved;
       showScreen('app-screen');
@@ -810,44 +830,92 @@ Notes: """${notes}"""`;
   }
 
   // ── IMAGE GENERATION ──
-  // Strategy: generate rich canvas images instantly (100% reliable),
-  // then silently try Pollinations in background to upgrade them.
+  // Strategy: 1) Canvas instantly, 2) Pollinations upgrade, 3) Gemini upgrade (if key present)
   async function genImages(scenes, style) {
     scenes.forEach((_, i) => fillThumb(i, null, true));
     const blobs = [];
 
-    // Step 1: generate all canvas images instantly
+    // Step 1: canvas images instantly
     for (let i = 0; i < scenes.length; i++) {
-      setDetail(`Creating scene ${i+1} of ${scenes.length}…`);
+      setDetail(`Creating canvas scene ${i+1} of ${scenes.length}…`);
       const blob = await makeRichCanvasImage(scenes[i], i, style);
       blobs.push(blob);
       fillThumb(i, blob, false);
     }
 
-    // Step 2: try Pollinations in background (non-blocking, best-effort)
-    setDetail('Scenes ready! Attempting AI image upgrade in background…');
-    upgradeWithPollinations(scenes, style, blobs);
+    // Step 2: upgrade with Pollinations (non-blocking background attempt)
+    setDetail('Canvas done! Upgrading with AI images…');
+    await upgradeWithPollinations(scenes, style, blobs);
 
+    // Step 3: upgrade with Gemini if key available (sequential, best quality)
+    const gemKey = window._geminiKey || '';
+    if (gemKey) {
+      setDetail('Upgrading with Gemini Imagen…');
+      await upgradeWithGemini(scenes, style, blobs, gemKey);
+    }
+
+    setDetail('Images ready!');
     return blobs;
   }
 
-  // Background upgrade — replaces canvas images if Pollinations succeeds
+  // Pollinations upgrade
   async function upgradeWithPollinations(scenes, style, blobs) {
-    for (let i = 0; i < scenes.length; i++) {
+    const promises = scenes.map(async (scene, i) => {
       try {
-        const p = encodeURIComponent(`${scenes[i].imagePrompt}, ${style}, high quality, educational, no text`);
+        const p = encodeURIComponent(`${scene.imagePrompt}, ${style}, high quality, educational, no text`);
         const seed = Math.floor(Math.random() * 999999);
-        const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true`;
+        const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true&model=flux`;
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 45000);
+        const timeout = setTimeout(() => controller.abort(), 30000);
         const r = await fetch(url, { signal: controller.signal });
         clearTimeout(timeout);
-        if (!r.ok) continue;
+        if (!r.ok) return;
         const blob = await r.blob();
+        if (blob.size < 5000) return;
+        blobs[i] = blob;
+        fillThumb(i, blob, false);
+        setDetail(`Pollinations: scene ${i+1} upgraded ✓`);
+      } catch(e) { /* silently skip */ }
+    });
+    await Promise.allSettled(promises);
+  }
+
+  // Gemini Imagen upgrade
+  async function upgradeWithGemini(scenes, style, blobs, apiKey) {
+    for (let i = 0; i < scenes.length; i++) {
+      try {
+        setDetail(`Gemini: generating scene ${i+1} of ${scenes.length}…`);
+        const prompt = `${scenes[i].imagePrompt}, ${style}, high quality, educational, vibrant, cinematic lighting, no text overlays`;
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              instances: [{ prompt }],
+              parameters: { sampleCount: 1, aspectRatio: '16:9', safetySetting: 'block_only_high' }
+            })
+          }
+        );
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.warn('Gemini image error scene', i, err?.error?.message || res.status);
+          continue;
+        }
+        const data = await res.json();
+        const b64 = data?.predictions?.[0]?.bytesBase64Encoded;
+        if (!b64) continue;
+        const byteChars = atob(b64);
+        const byteArr = new Uint8Array(byteChars.length);
+        for (let j = 0; j < byteChars.length; j++) byteArr[j] = byteChars.charCodeAt(j);
+        const blob = new Blob([byteArr], { type: 'image/png' });
         if (blob.size < 5000) continue;
         blobs[i] = blob;
         fillThumb(i, blob, false);
-      } catch(e) { /* silently skip */ }
+        setDetail(`Gemini: scene ${i+1} upgraded ✓`);
+      } catch(e) {
+        console.warn('Gemini scene', i, 'failed:', e.message);
+      }
     }
   }
 
@@ -1023,38 +1091,69 @@ Notes: """${notes}"""`;
   async function loadFFmpeg() {
     if (ffmpegLoaded) return;
     ffmpeg = new FFmpeg();
-    const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,'text/javascript'),
-      wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`,'application/wasm'),
+
+    // Log FFmpeg output for debugging
+    ffmpeg.on('log', ({ message }) => {
+      console.log('[FFmpeg]', message);
     });
+
+    const TIMEOUT_MS = 45000;
+    const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+
+    await Promise.race([
+      ffmpeg.load({
+        coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, 'application/wasm'),
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('FFmpeg WASM load timed out after 45s. Try refreshing on a faster connection.')), TIMEOUT_MS)
+      )
+    ]);
     ffmpegLoaded = true;
   }
 
   async function renderMP4(imgBlobs, audBlobs, dur, scenes) {
-    for (let i=0;i<imgBlobs.length;i++) {
+    // Write all files
+    for (let i = 0; i < imgBlobs.length; i++) {
       await ffmpeg.writeFile(`img${i}.jpg`, await fetchFile(imgBlobs[i]));
-      await ffmpeg.writeFile(`audio${i}.wav`, await fetchFile(audBlobs[i])); // WAV extension matches WAV content
+      await ffmpeg.writeFile(`audio${i}.wav`, await fetchFile(audBlobs[i]));
     }
-    const segs=[];
-    for (let i=0;i<scenes.length;i++) {
+
+    const segs = [];
+    for (let i = 0; i < scenes.length; i++) {
       setDetail(`Encoding scene ${i+1} of ${scenes.length}…`);
-      const seg=`seg${i}.mp4`;
-      const title=(scenes[i].title||'').replace(/'/g,"\\'").replace(/:/g,'\\:').replace(/[\[\]]/g,'');
-      await ffmpeg.exec([
-        '-loop','1','-i',`img${i}.jpg`,'-i',`audio${i}.wav`,
-        '-c:v','libx264','-c:a','aac','-b:a','128k',
-        '-shortest','-t',String(dur),
-        '-vf',`scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,drawtext=text='${title}':fontsize=32:fontcolor=white:x=(w-text_w)/2:y=h-70:box=1:boxcolor=black@0.55:boxborderw=12`,
-        '-pix_fmt','yuv420p','-r','25',seg
+      const seg = `seg${i}.mp4`;
+
+      // Encode each scene: image + silent audio, no drawtext (avoids font issues)
+      await Promise.race([
+        ffmpeg.exec([
+          '-loop', '1', '-t', String(dur), '-i', `img${i}.jpg`,
+          '-i', `audio${i}.wav`,
+          '-c:v', 'libx264', '-tune', 'stillimage',
+          '-c:a', 'aac', '-b:a', '64k',
+          '-pix_fmt', 'yuv420p',
+          '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2',
+          '-r', '24', '-shortest', '-y', seg
+        ]),
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Scene ${i+1} encode timed out`)), 60000))
       ]);
       segs.push(seg);
     }
-    setDetail('Joining scenes…');
-    await ffmpeg.writeFile('concat.txt', segs.map(f=>`file '${f}'`).join('\n'));
-    await ffmpeg.exec(['-f','concat','-safe','0','-i','concat.txt','-c','copy','output.mp4']);
+
+    setDetail('Joining all scenes…');
+    const concatList = segs.map(f => `file '${f}'`).join('\n');
+    await ffmpeg.writeFile('concat.txt', concatList);
+
+    await Promise.race([
+      ffmpeg.exec([
+        '-f', 'concat', '-safe', '0', '-i', 'concat.txt',
+        '-c', 'copy', '-y', 'output.mp4'
+      ]),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Final concat timed out')), 120000))
+    ]);
+
     const data = await ffmpeg.readFile('output.mp4');
-    return new Blob([data.buffer],{type:'video/mp4'});
+    return new Blob([data.buffer], { type: 'video/mp4' });
   }
 
   // ── DOWNLOAD / RESET ──
