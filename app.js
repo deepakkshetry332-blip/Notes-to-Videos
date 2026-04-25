@@ -53,8 +53,12 @@ document.getElementById(id).style.display = ‘block’;
 // ── KEY MANAGEMENT ────────────────────────────────────────────
 window.saveKey = () => {
 const val = document.getElementById(‘api-key-input’).value.trim();
+if (val.length < 10) {
+toast(‘Key looks too short — please paste the full Groq key’);
+return;
+}
 if (!val.startsWith(‘gsk_’)) {
-toast(‘Please enter a valid Groq API key (starts with gsk_)’);
+toast(‘Groq keys start with gsk_ — please check and try again’);
 return;
 }
 groqKey = val;
@@ -69,7 +73,14 @@ showScreen(‘setup-screen’);
 
 window.toggleKeyVisibility = () => {
 const inp = document.getElementById(‘api-key-input’);
-inp.type = inp.type === ‘password’ ? ‘text’ : ‘password’;
+const btn = document.getElementById(‘eye-btn’);
+if (inp.type === ‘password’) {
+inp.type = ‘text’;
+btn.textContent = ‘🙈’;
+} else {
+inp.type = ‘password’;
+btn.textContent = ‘👁’;
+}
 };
 
 window.updateCharCount = () => {
