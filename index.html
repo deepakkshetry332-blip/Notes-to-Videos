@@ -510,16 +510,16 @@ select {
 <!-- SETUP SCREEN -->
 
 <div id="setup-screen">
-  <p class="section-label">OpenAI API Key</p>
+  <p class="section-label">Groq API Key — 100% Free</p>
   <div class="key-input-wrap">
-    <input type="password" id="api-key-input" placeholder="sk-..." autocomplete="off" />
+    <input type="password" id="api-key-input" placeholder="gsk_..." autocomplete="off" />
     <button class="toggle-key" onclick="toggleKeyVisibility()" id="eye-btn">👁</button>
   </div>
   <p style="font-size:0.6rem; color:#ffffff30; margin-top:0.5rem; line-height:1.6;">
-    Your key stays in your browser only — never sent to any server except OpenAI directly.
+    Get a free key at <strong style="color:#e8b84b">console.groq.com</strong> → API Keys. Images are generated free via Pollinations.ai — no key needed.
   </p>
   <div class="ffmpeg-note" style="margin-top:1rem;">
-    <strong>⚠️ First-time load:</strong> FFmpeg.wasm (~31MB) downloads once and is cached. Video rendering happens 100% in your browser — no upload, no server.
+    <strong>✅ 100% Free:</strong> Groq (LLM) + Pollinations.ai (images) + Web Speech (voice) + FFmpeg.wasm (video). No credit card. No limits.
   </div>
   <button class="btn-generate" onclick="saveKey()" style="margin-top:0.5rem;">
     CONTINUE →
@@ -588,19 +588,19 @@ select {
   <p class="progress-subtitle">Building your visual story</p>
 
   <ul class="steps-list" id="steps-list">
-    <li class="step-item" id="step-parse" data-icon="📝">
+    <li class="step-item" id="step-parse" data-icon="📝" data-label="Analysing notes with Groq (Llama 3.3)">
       <span class="step-icon">📝</span>
-      <span>Analysing notes with GPT-4o</span>
+      <span>Analysing notes with Groq (Llama 3.3)</span>
     </li>
-    <li class="step-item" id="step-images" data-icon="🎨">
+    <li class="step-item" id="step-images" data-icon="🎨" data-label="Generating images with Pollinations.ai (free)">
       <span class="step-icon">🎨</span>
-      <span>Generating images with DALL-E 3</span>
+      <span>Generating images with Pollinations.ai (free)</span>
     </li>
-    <li class="step-item" id="step-audio" data-icon="🔊">
+    <li class="step-item" id="step-audio" data-icon="🔊" data-label="Synthesising narration (Web Speech API)">
       <span class="step-icon">🔊</span>
-      <span>Synthesising narration (TTS)</span>
+      <span>Synthesising narration (Web Speech API)</span>
     </li>
-    <li class="step-item" id="step-video" data-icon="🎞">
+    <li class="step-item" id="step-video" data-icon="🎞" data-label="Rendering MP4 with FFmpeg">
       <span class="step-icon">🎞</span>
       <span>Rendering MP4 with FFmpeg</span>
     </li>
