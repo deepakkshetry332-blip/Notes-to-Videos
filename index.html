@@ -824,13 +824,17 @@ Notes: """${notes}"""`;
   }
 
   async function fetchImageWithRetry(scene, i, style, total) {
-    for (let attempt = 1; attempt <= 4; attempt++) {
+    // Try multiple Pollinations endpoints for reliability
+    const models = ['turbo', 'flux-schnell', ''];
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const p = encodeURIComponent(`${scene.imagePrompt}, ${style}, high quality, educational, no text`);
         const seed = Math.floor(Math.random() * 999999);
-        const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true&model=flux`;
+        const model = models[attempt - 1];
+        const modelParam = model ? `&model=${model}` : '';
+        const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true${modelParam}`;
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
+        const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
         const r = await fetch(url, { signal: controller.signal });
         clearTimeout(timeout);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -839,9 +843,9 @@ Notes: """${notes}"""`;
         setDetail(`Image ${i+1} of ${total} done ✓`);
         return blob;
       } catch(e) {
-        if (attempt < 4) {
-          setDetail(`Image ${i+1} failed, retrying (${attempt}/3)…`);
-          await new Promise(r => setTimeout(r, 3000));
+        if (attempt < 3) {
+          setDetail(`Image ${i+1} failed (attempt ${attempt}), retrying…`);
+          await new Promise(r => setTimeout(r, 5000 * attempt)); // 5s, then 10s
         } else {
           setDetail(`Image ${i+1} using fallback…`);
           return makeFallbackImage(scene.title || `Scene ${i+1}`);
@@ -930,7 +934,7 @@ Notes: """${notes}"""`;
   async function renderMP4(imgBlobs, audBlobs, dur, scenes) {
     for (let i=0;i<imgBlobs.length;i++) {
       await ffmpeg.writeFile(`img${i}.jpg`, await fetchFile(imgBlobs[i]));
-      await ffmpeg.writeFile(`audio${i}.webm`, await fetchFile(audBlobs[i]));
+      await ffmpeg.writeFile(`audio${i}.wav`, await fetchFile(audBlobs[i])); // WAV extension matches WAV content
     }
     const segs=[];
     for (let i=0;i<scenes.length;i++) {
@@ -938,7 +942,7 @@ Notes: """${notes}"""`;
       const seg=`seg${i}.mp4`;
       const title=(scenes[i].title||'').replace(/'/g,"\\'").replace(/:/g,'\\:').replace(/[\[\]]/g,'');
       await ffmpeg.exec([
-        '-loop','1','-i',`img${i}.jpg`,'-i',`audio${i}.webm`,
+        '-loop','1','-i',`img${i}.jpg`,'-i',`audio${i}.wav`,
         '-c:v','libx264','-c:a','aac','-b:a','128k',
         '-shortest','-t',String(dur),
         '-vf',`scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,drawtext=text='${title}':fontsize=32:fontcolor=white:x=(w-text_w)/2:y=h-70:box=1:boxcolor=black@0.55:boxborderw=12`,
