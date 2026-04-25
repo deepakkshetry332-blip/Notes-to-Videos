@@ -633,7 +633,330 @@ select {
 
 <div id="toast"></div>
 
-<script type="module" src="app.js"></script>
+<!-- Inline critical setup so Safari doesn't block it -->
+
+<script>
+  // ── KEY MANAGEMENT (inline so it works before module loads) ──
+  function showScreen(id) {
+    ['setup-screen','app-screen','progress-screen','done-screen'].forEach(s => {
+      document.getElementById(s).style.display = 'none';
+    });
+    document.getElementById(id).style.display = 'block';
+  }
+
+  function toastMsg(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 5000);
+  }
+
+  function toggleKeyVisibility() {
+    var inp = document.getElementById('api-key-input');
+    var btn = document.getElementById('eye-btn');
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      inp.type = 'password';
+      btn.textContent = '👁';
+    }
+  }
+
+  function saveKey() {
+    var val = document.getElementById('api-key-input').value.trim();
+    if (val.length < 10) {
+      toastMsg('Key too short — paste the full Groq key');
+      return;
+    }
+    if (!val.startsWith('gsk_')) {
+      toastMsg('Groq keys start with gsk_ — check and try again');
+      return;
+    }
+    try { localStorage.setItem('nf_groq_key', val); } catch(e) {}
+    window._groqKey = val;
+    showScreen('app-screen');
+    if (window._appReady) window._appReady(val);
+  }
+
+  function changeKey() {
+    var saved = '';
+    try { saved = localStorage.getItem('nf_groq_key') || ''; } catch(e) {}
+    document.getElementById('api-key-input').value = saved;
+    showScreen('setup-screen');
+  }
+
+  function updateCharCount() {
+    var n = document.getElementById('notes-input').value.length;
+    document.getElementById('char-count').textContent = n;
+  }
+
+  // Check on load
+  document.addEventListener('DOMContentLoaded', function() {
+    var saved = '';
+    try { saved = localStorage.getItem('nf_groq_key') || ''; } catch(e) {}
+    if (saved && saved.startsWith('gsk_')) {
+      window._groqKey = saved;
+      showScreen('app-screen');
+    } else {
+      showScreen('setup-screen');
+    }
+  });
+</script>
+
+<!-- FFmpeg + app logic -->
+
+<script type="module">
+  import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+  import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
+
+  let ffmpeg = null;
+  let ffmpegLoaded = false;
+  let videoBlob = null;
+  let scenes = [];
+
+  // Populate voices
+  function populateVoices() {
+    var sel = document.getElementById('voice-select');
+    if (!sel) return;
+    var voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+    if (!voices.length) return;
+    sel.innerHTML = '';
+    voices.forEach(v => {
+      var opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = v.name.replace('Google ','').replace(' English','').slice(0,20);
+      sel.appendChild(opt);
+    });
+  }
+  populateVoices();
+  window.speechSynthesis.onvoiceschanged = populateVoices;
+
+  // ── MAIN GENERATION ──
+  window.startGeneration = async () => {
+    const notes = document.getElementById('notes-input').value.trim();
+    if (notes.length < 50) { toastMsg('Please paste at least a few sentences.'); return; }
+
+    const groqKey     = window._groqKey || localStorage.getItem('nf_groq_key') || '';
+    const sceneCount  = parseInt(document.getElementById('scene-count').value);
+    const imageStyle  = document.getElementById('image-style').value;
+    const sceneDur    = parseInt(document.getElementById('scene-duration').value);
+    const voiceName   = document.getElementById('voice-select').value;
+
+    if (!groqKey) { toastMsg('No API key found — please re-enter it.'); showScreen('setup-screen'); return; }
+
+    showScreen('progress-screen');
+    document.getElementById('scenes-grid').innerHTML = '';
+    document.getElementById('scenes-label').style.display = 'none';
+    videoBlob = null;
+
+    ['step-parse','step-images','step-audio','step-video'].forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'step-item';
+      el.innerHTML = `<span class="step-icon">${el.dataset.icon}</span><span>${el.dataset.label}</span>`;
+    });
+
+    try {
+      setStep('step-parse','active'); setDetail('Sending notes to Groq…');
+      scenes = await parseWithGroq(notes, sceneCount, groqKey);
+      setStep('step-parse','done');
+      renderPlaceholders(scenes.length);
+
+      setStep('step-images','active'); setDetail('Generating images…');
+      const imgBlobs = await genImages(scenes, imageStyle);
+      setStep('step-images','done');
+      imgBlobs.forEach((b,i) => fillThumb(i,b,false));
+
+      setStep('step-audio','active'); setDetail('Recording narration…');
+      const audBlobs = await genAudio(scenes, voiceName);
+      setStep('step-audio','done');
+
+      setStep('step-video','active'); setDetail('Loading FFmpeg…');
+      await loadFFmpeg();
+      setDetail('Rendering MP4…');
+      videoBlob = await renderMP4(imgBlobs, audBlobs, sceneDur, scenes);
+      setStep('step-video','done');
+
+      document.getElementById('done-meta').textContent = `${scenes.length} scenes · ${scenes.length * sceneDur}s`;
+      showScreen('done-screen');
+
+    } catch(err) {
+      console.error(err);
+      toastMsg('Error: ' + (err.message || 'Something went wrong'));
+      const a = document.querySelector('.step-item.active');
+      if (a) a.className = 'step-item error';
+    }
+  };
+
+  // ── GROQ ──
+  async function parseWithGroq(notes, count, key) {
+    const prompt = `Convert these study notes into exactly ${count} video scenes.
+Return ONLY a JSON array (no markdown) where each item has:
+- "title": 3-5 word scene title
+- "narration": max 25 words spoken explanation
+- "imagePrompt": detailed visual description for image AI
+
+Notes: """${notes}"""`;
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role:'user', content: prompt }], max_tokens: 2000 })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `Groq ${res.status}`); }
+    const d = await res.json();
+    const txt = d.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
+    return JSON.parse(txt);
+  }
+
+  // ── POLLINATIONS ──
+  async function genImages(scenes, style) {
+    const blobs = [];
+    for (let i = 0; i < scenes.length; i++) {
+      setDetail(`Image ${i+1} of ${scenes.length}…`);
+      fillThumb(i, null, true);
+      const p = encodeURIComponent(`${scenes[i].imagePrompt}, ${style}, high quality, no text`);
+      const seed = Math.floor(Math.random()*999999);
+      const r = await fetch(`https://image.pollinations.ai/prompt/${p}?width=1280&height=720&seed=${seed}&nologo=true`);
+      if (!r.ok) throw new Error(`Image ${i+1} failed`);
+      blobs.push(await r.blob());
+      if (i < scenes.length-1) await sleep(500);
+    }
+    return blobs;
+  }
+
+  // ── TTS ──
+  async function genAudio(scenes, voiceName) {
+    const blobs = [];
+    for (let i = 0; i < scenes.length; i++) {
+      setDetail(`Narrating scene ${i+1}…`);
+      blobs.push(await ttsBlob(scenes[i].narration, voiceName));
+    }
+    return blobs;
+  }
+
+  function ttsBlob(text, voiceName) {
+    return new Promise(resolve => {
+      try {
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const dest = ctx.createMediaStreamDestination();
+        const rec = new MediaRecorder(dest.stream);
+        const chunks = [];
+        rec.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+        rec.onstop = () => resolve(new Blob(chunks,{type:'audio/webm'}));
+        rec.start();
+        const u = new SpeechSynthesisUtterance(text);
+        const vs = window.speechSynthesis.getVoices();
+        const v = vs.find(x=>x.name===voiceName)||vs.find(x=>x.lang.startsWith('en'))||vs[0];
+        if(v) u.voice = v;
+        u.rate = 0.9;
+        u.onend = () => setTimeout(()=>rec.stop(),400);
+        u.onerror = () => { rec.stop(); resolve(silentWav(3)); };
+        window.speechSynthesis.speak(u);
+      } catch(e) { resolve(silentWav(3)); }
+    });
+  }
+
+  function silentWav(sec) {
+    const sr=44100, n=sr*sec, buf=new ArrayBuffer(44+n*2), v=new DataView(buf);
+    const ws=(s,o)=>{for(const c of s)v.setUint8(o++,c.charCodeAt(0));return o;};
+    let o=0;
+    o=ws('RIFF',o);v.setUint32(o,36+n*2,true);o+=4;
+    o=ws('WAVE',o);o=ws('fmt ',o);
+    v.setUint32(o,16,true);o+=4;v.setUint16(o,1,true);o+=2;v.setUint16(o,1,true);o+=2;
+    v.setUint32(o,sr,true);o+=4;v.setUint32(o,sr*2,true);o+=4;
+    v.setUint16(o,2,true);o+=2;v.setUint16(o,16,true);o+=2;
+    o=ws('data',o);v.setUint32(o,n*2,true);
+    return new Blob([buf],{type:'audio/wav'});
+  }
+
+  // ── FFMPEG ──
+  async function loadFFmpeg() {
+    if (ffmpegLoaded) return;
+    ffmpeg = new FFmpeg();
+    const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,'text/javascript'),
+      wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`,'application/wasm'),
+    });
+    ffmpegLoaded = true;
+  }
+
+  async function renderMP4(imgBlobs, audBlobs, dur, scenes) {
+    for (let i=0;i<imgBlobs.length;i++) {
+      await ffmpeg.writeFile(`img${i}.jpg`, await fetchFile(imgBlobs[i]));
+      await ffmpeg.writeFile(`audio${i}.webm`, await fetchFile(audBlobs[i]));
+    }
+    const segs=[];
+    for (let i=0;i<scenes.length;i++) {
+      setDetail(`Encoding scene ${i+1} of ${scenes.length}…`);
+      const seg=`seg${i}.mp4`;
+      const title=(scenes[i].title||'').replace(/'/g,"\\'").replace(/:/g,'\\:').replace(/[\[\]]/g,'');
+      await ffmpeg.exec([
+        '-loop','1','-i',`img${i}.jpg`,'-i',`audio${i}.webm`,
+        '-c:v','libx264','-c:a','aac','-b:a','128k',
+        '-shortest','-t',String(dur),
+        '-vf',`scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,drawtext=text='${title}':fontsize=32:fontcolor=white:x=(w-text_w)/2:y=h-70:box=1:boxcolor=black@0.55:boxborderw=12`,
+        '-pix_fmt','yuv420p','-r','25',seg
+      ]);
+      segs.push(seg);
+    }
+    setDetail('Joining scenes…');
+    await ffmpeg.writeFile('concat.txt', segs.map(f=>`file '${f}'`).join('\n'));
+    await ffmpeg.exec(['-f','concat','-safe','0','-i','concat.txt','-c','copy','output.mp4']);
+    const data = await ffmpeg.readFile('output.mp4');
+    return new Blob([data.buffer],{type:'video/mp4'});
+  }
+
+  // ── DOWNLOAD / RESET ──
+  window.downloadVideo = () => {
+    if (!videoBlob) return;
+    const url = URL.createObjectURL(videoBlob);
+    const a = document.createElement('a');
+    a.href=url; a.download='notefilm.mp4'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+  };
+
+  window.startOver = () => {
+    document.getElementById('notes-input').value='';
+    document.getElementById('char-count').textContent='0';
+    videoBlob=null; scenes=[];
+    showScreen('app-screen');
+  };
+
+  // ── UI HELPERS ──
+  function setStep(id, state) {
+    const el = document.getElementById(id);
+    el.className = `step-item ${state}`;
+    const icons = {
+      active: `<div class="spinner"></div>`,
+      done:   `<span class="step-icon">✓</span>`,
+      error:  `<span class="step-icon">✗</span>`
+    };
+    el.innerHTML = `${icons[state]}<span>${el.dataset.label}</span>`;
+  }
+
+  function setDetail(msg) { document.getElementById('progress-detail').textContent = msg; }
+
+  function renderPlaceholders(n) {
+    const g = document.getElementById('scenes-grid');
+    g.innerHTML='';
+    document.getElementById('scenes-label').style.display='block';
+    for(let i=0;i<n;i++) {
+      g.innerHTML+=`<div class="scene-thumb" id="thumb-${i}"><div class="img-placeholder">🎨</div><span class="scene-num">SCENE ${String(i+1).padStart(2,'0')}</span></div>`;
+    }
+  }
+
+  function fillThumb(i, blob, loading) {
+    const el = document.getElementById(`thumb-${i}`);
+    if (!el) return;
+    if (loading) { el.querySelector('.img-placeholder').textContent='⏳'; return; }
+    const url = URL.createObjectURL(blob);
+    el.innerHTML=`<img src="${url}" onload="this.classList.add('loaded')"/><span class="scene-num">SCENE ${String(i+1).padStart(2,'0')}</span>`;
+  }
+
+  function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+</script>
 
 </body>
 </html>
