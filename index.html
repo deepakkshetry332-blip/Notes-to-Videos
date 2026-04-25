@@ -809,20 +809,34 @@ Notes: """${notes}"""`;
     return JSON.parse(txt);
   }
 
-  // ── POLLINATIONS — parallel for speed ──
+  // ── POLLINATIONS — parallel with retry ──
   async function genImages(scenes, style) {
     scenes.forEach((_, i) => fillThumb(i, null, true));
-    setDetail('Generating all images in parallel — much faster!');
+    setDetail('Generating images in parallel…');
 
-    const promises = scenes.map((scene, i) => {
+    async function fetchImage(scene, i, attempt) {
       const p = encodeURIComponent(`${scene.imagePrompt}, ${style}, high quality, educational, no text`);
       const seed = Math.floor(Math.random() * 999999);
       const url = `https://image.pollinations.ai/prompt/${p}?width=1024&height=576&seed=${seed}&nologo=true`;
-      return fetch(url)
-        .then(r => { if (!r.ok) throw new Error(`Image ${i+1} failed`); return r.blob(); })
-        .then(blob => { setDetail(`Image ${i+1} of ${scenes.length} ready...`); return blob; });
-    });
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('bad response');
+        const blob = await r.blob();
+        setDetail(`Image ${i+1} of ${scenes.length} ready!`);
+        return blob;
+      } catch(e) {
+        if (attempt < 3) {
+          setDetail(`Image ${i+1} retrying (attempt ${attempt+1})…`);
+          await new Promise(r => setTimeout(r, 2000 * attempt));
+          return fetchImage(scene, i, attempt + 1);
+        }
+        // After 3 fails return a blank placeholder blob
+        setDetail(`Image ${i+1} skipped after 3 tries`);
+        return await fetch('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==').then(r=>r.blob());
+      }
+    }
 
+    const promises = scenes.map((scene, i) => fetchImage(scene, i, 1));
     return await Promise.all(promises);
   }
 
